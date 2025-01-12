@@ -81,8 +81,10 @@ export const ProjectUploader = () => {
         <input
           id="project-upload"
           type="file"
-          webkitdirectory="true"
-          directory="true"
+          // @ts-ignore
+          webkitdirectory=""
+          // @ts-ignore
+          directory=""
           multiple
           className="hidden"
           onChange={handleFileUpload}
