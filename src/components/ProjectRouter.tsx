@@ -1,5 +1,6 @@
 import { useProject } from "@/contexts/ProjectContext";
 import { useParams, Routes, Route } from "react-router-dom";
+import Index from "@/pages/Index";
 
 const ProjectRouter = () => {
   const { projects } = useProject();
@@ -13,7 +14,8 @@ const ProjectRouter = () => {
 
   return (
     <Routes>
-      {currentProject.routes.map(({ path, component: Component }) => (
+      <Route path="/" element={<Index />} />
+      {currentProject.routes?.map(({ path, component: Component }) => (
         <Route key={path} path={path} element={<Component />} />
       ))}
     </Routes>
