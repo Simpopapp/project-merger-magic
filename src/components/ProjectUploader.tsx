@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload } from "lucide-react";
+import { Upload, Play } from "lucide-react";
 import { useProject } from "@/contexts/ProjectContext";
+import { Progress } from "@/components/ui/progress";
 
 export const ProjectUploader = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadedProjects, setUploadedProjects] = useState<Record<string, File[]>>({});
+  const [progress, setProgress] = useState(0);
   const { toast } = useToast();
   const { registerProject } = useProject();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setIsProcessing(true);
       const files = event.target.files;
       
       if (!files) {
@@ -31,10 +33,34 @@ export const ProjectUploader = () => {
         return acc;
       }, {});
 
+      setUploadedProjects(projects);
+      
+      toast({
+        title: "Sucesso",
+        description: `${Object.keys(projects).length} projetos preparados para conversão`,
+      });
+    } catch (error) {
+      console.error("Error processing files:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar os arquivos",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startConversion = async () => {
+    try {
+      setIsProcessing(true);
+      setProgress(0);
+
+      const totalProjects = Object.entries(uploadedProjects).length;
+      let processed = 0;
+
       // Register each project
-      Object.entries(projects).forEach(([projectName, projectFiles], index) => {
+      for (const [projectName, projectFiles] of Object.entries(uploadedProjects)) {
         registerProject({
-          id: (index + 2).toString(), // Start from 2 since we have project 1
+          id: (processed + 2).toString(), // Start from 2 since we have project 1
           name: projectName,
           routes: [{
             path: "/",
@@ -53,21 +79,30 @@ export const ProjectUploader = () => {
             )
           }]
         });
-      });
+
+        processed++;
+        setProgress((processed / totalProjects) * 100);
+        
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
       toast({
         title: "Sucesso",
-        description: `${Object.keys(projects).length} projetos importados`,
+        description: `${totalProjects} projetos convertidos com sucesso`,
       });
+
+      setUploadedProjects({});
     } catch (error) {
-      console.error("Error processing files:", error);
+      console.error("Error converting projects:", error);
       toast({
         title: "Erro",
-        description: "Erro ao processar os arquivos",
+        description: "Erro ao converter os projetos",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
+      setProgress(0);
     }
   };
 
@@ -91,10 +126,21 @@ export const ProjectUploader = () => {
           disabled={isProcessing}
         />
       </label>
-      {isProcessing && (
-        <Button disabled>
-          Processando...
+
+      {Object.keys(uploadedProjects).length > 0 && !isProcessing && (
+        <Button onClick={startConversion} className="mt-4">
+          <Play className="mr-2" />
+          Iniciar Conversão
         </Button>
+      )}
+
+      {isProcessing && (
+        <div className="w-full max-w-md space-y-2">
+          <Progress value={progress} />
+          <p className="text-center text-sm text-gray-600">
+            Convertendo projetos... {Math.round(progress)}%
+          </p>
+        </div>
       )}
     </div>
   );
